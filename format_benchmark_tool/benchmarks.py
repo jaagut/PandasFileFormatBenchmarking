@@ -24,7 +24,7 @@ class AbstractBenchmark:
         self._path : str = path
         self._results : Dict|None = None
 
-    def collect_results(self, number_of_runs: int = NUMBER_OF_RUNS):
+    def collect_results(self, number_of_runs: int = 3):
         """Runs benchmarks and collects results
 
         :param number_of_runs: Number of repeated runs for benchmarks, defaults to NUMBER_OF_RUNS
@@ -112,6 +112,16 @@ class XMLBenchmark(AbstractBenchmark):
 
     def measure_read(self):
         pd.read_xml(self._path)
+
+
+class ExcelBenchmark(AbstractBenchmark):
+    """Benchmarks .xlsx (Excel) files.
+    """
+    def measure_write(self):
+        self._df.to_excel(self._path)
+
+    def measure_read(self):
+        pd.read_excel(self._path)
 
 
 class PickleBenchmark(AbstractBenchmark):

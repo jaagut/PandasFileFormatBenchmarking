@@ -5,10 +5,8 @@ import pandas as pd
 
 from benchmarks import *
 
+# TODO: Better way of handling number of runs
 # TODO: Test File Compression
-
-# How often to repeat benchmark runs
-NUMBER_OF_RUNS : int = 3
 
 # Generate data
 np.random.seed = 2908
@@ -46,6 +44,7 @@ class FormatBenchmarkTool:
             CSVBenchmark(self.df, os.path.join(self.write_dir, f'{DF_SIZE}.csv')) as csv_benchmark,
             JSONBenchmark(self.df, os.path.join(self.write_dir, f'{DF_SIZE}.json')) as json_benchmark,
             XMLBenchmark(self.df, os.path.join(self.write_dir, f'{DF_SIZE}.xml')) as xml_benchmark,
+            ExcelBenchmark(self.df, os.path.join(self.write_dir, f'{DF_SIZE}.xlsx')) as excel_benchmark,
             PickleBenchmark(self.df, os.path.join(self.write_dir, f'{DF_SIZE}.pkl')) as pickle_benchmark,
             HDF5Benchmark(self.df, os.path.join(self.write_dir, f'{DF_SIZE}.h5')) as hdf5_benchmark,
             FeatherBenchmark(self.df, os.path.join(self.write_dir, f'{DF_SIZE}.feather')) as feather_benchmark,
@@ -57,6 +56,7 @@ class FormatBenchmarkTool:
                 'csv': csv_benchmark,
                 'json': json_benchmark,
                 'xml': xml_benchmark,
+                'excel': excel_benchmark,
                 'pickle': pickle_benchmark,
                 'hdf5': hdf5_benchmark,
                 'feather': feather_benchmark,
