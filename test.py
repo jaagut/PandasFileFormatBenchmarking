@@ -12,26 +12,29 @@ from fastavro import writer, reader, parse_schema
 
 # TODOs: Implement feather, hdf5, stata?
 # TODOs: Read benchmarks
-# TODOs: Compression
+# TODOs: File Compression
+
+# How often to repeat benchmark runs
+NUMBER_OF_RUNS : int = 3
 
 # Generate data
 np.random.seed = 2908
-df_size = 1000_000
-df = pd.DataFrame({
-    'a': np.random.rand(df_size),
-    'b': np.random.rand(df_size),
-    'c': np.random.rand(df_size),
-    'd': np.random.rand(df_size),
-    'e': np.random.rand(df_size)
+DF_SIZE = 1000_000
+DF = pd.DataFrame({
+    'a': np.random.rand(DF_SIZE),
+    'b': np.random.rand(DF_SIZE),
+    'c': np.random.rand(DF_SIZE),
+    'd': np.random.rand(DF_SIZE),
+    'e': np.random.rand(DF_SIZE)
 })
 
 class FormatBenchmarkTool:
     def __init__(self, 
-            df: pd.DataFrame = df,
+            df: pd.DataFrame = DF,
             write_dir: str = '.cache/'):
         """Initialize FormatBenchmarkTool.
 
-        :param df: Pandas' dataframe to write
+        :param df: Pandas' dataframe to write, defaults to DF
         :type df: pd.DataFrame, optional
         :param write_dir: Directory where to store write benchmarks, defaults to '.cache/'
         :type write_dir: str, optional
@@ -47,10 +50,10 @@ class FormatBenchmarkTool:
         """Run all benchmarks and collect results.
         """
         with (
-            CSVBenchmark(self.df, os.path.join(self.write_dir, f'{df_size}.csv')) as csv_benchmark,
-            ORCBenchmark(self.df, os.path.join(self.write_dir, f'{df_size}.orc')) as orc_benchmark,
-            ParquetBenchmark(self.df, os.path.join(self.write_dir, f'{df_size}.parquet')) as parquet_benchmark,
-            PickleBenchmark(self.df, os.path.join(self.write_dir, f'{df_size}.pkl')) as pickle_benchmark,
+            CSVBenchmark(self.df, os.path.join(self.write_dir, f'{DF_SIZE}.csv')) as csv_benchmark,
+            ORCBenchmark(self.df, os.path.join(self.write_dir, f'{DF_SIZE}.orc')) as orc_benchmark,
+            ParquetBenchmark(self.df, os.path.join(self.write_dir, f'{DF_SIZE}.parquet')) as parquet_benchmark,
+            PickleBenchmark(self.df, os.path.join(self.write_dir, f'{DF_SIZE}.pkl')) as pickle_benchmark,
         ):
             self.results : Dict[AbstractBenchmark] = {
                 'csv': csv_benchmark,
@@ -92,17 +95,19 @@ class AbstractBenchmark:
         self._path : str = path
         self._results : Dict|None = None
 
-    def collect_results(self, number_of_runs: int = 3):
+    def collect_results(self, number_of_runs: int = NUMBER_OF_RUNS):
         """Runs benchmarks and collects results
 
-        :param number_of_runs: Number of repeated runs for benchmarks, defaults to 3
+        :param number_of_runs: Number of repeated runs for benchmarks, defaults to NUMBER_OF_RUNS
         :type number_of_runs: int, optional
         """
         self._results : Dict[float|None, float|None] = {
-            'write_time' : None,
-            'read_time' : None,
+            'write_time': None,
+            'file_size': None,
+            'read_time': None,
         }
-        self._results['write_time'] = timeit.Timer(self.write).timeit(number=number_of_runs)
+        self._results['write_time'] = timeit.Timer(self.measure_write).timeit(number=number_of_runs)
+        self._results['file_size'] = self.measure_file_size()
         # TODO: read
 
     def get_results(self) -> Dict[float|None, float|None]:
@@ -116,13 +121,21 @@ class AbstractBenchmark:
         return self._results
 
     @abc.abstractmethod
-    def write(self):
+    def measure_write(self):
         """Write initialized dataframe to file
         """
         ...
 
+    def measure_file_size(self) -> int:
+        """Returns file size of previously written dataframe.
+
+        :return: File size in bytes
+        :rtype: int
+        """
+        return os.path.getsize(self._path)
+
     @abc.abstractmethod
-    def read(self):
+    def measure_read(self):
         ...
 
     def clean_files(self):
@@ -142,40 +155,40 @@ class AbstractBenchmark:
 class CSVBenchmark(AbstractBenchmark):
     """Benchmarks .csv files.
     """
-    def write(self):
+    def measure_write(self):
         self._df.to_csv(self._path)
 
-    def read(self):
+    def measure_read(self):
         ...
 
 
 class ORCBenchmark(AbstractBenchmark):
     """Benchmarks .orc files.
     """
-    def write(self):
+    def measure_write(self):
         table = pa.Table.from_pandas(self._df, preserve_index=False)
         orc.write_table(table, self._path)
 
-    def read(self):
+    def measure_read(self):
         ...
 
 
 class ParquetBenchmark(AbstractBenchmark):
     """Benchmarks .parquet files.
     """
-    def write(self):
+    def measure_write(self):
         self._df.to_parquet(self._path)
 
-    def read(self):
+    def measure_read(self):
         ...
 
 
 class PickleBenchmark(AbstractBenchmark):
     """Benchmarks .pkl (Pickle) files.
     """
-    def write(self):
+    def measure_write(self):
         with open(self._path, 'wb') as f:
             pickle.dump(self._df, f)
 
-    def read(self):
+    def measure_read(self):
         ...
