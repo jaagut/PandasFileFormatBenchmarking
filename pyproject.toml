@@ -10,9 +10,8 @@ packages = [{include = "benchmarking_file_formats_for_cloud"}]
 python = "^3.10"
 numpy = "^1.23.3"
 pandas = "^1.4.4"
-feather-format = "^0.4.1"
 pyarrow = "^9.0.0"
-fastavro = "^1.6.1"
+tables = "^3.7.0"
 
 
 [build-system]

@@ -7,8 +7,7 @@ import pandas as pd
 import pyarrow
 import pyarrow.orc as orc 
 
-# TODOs: Implement feather, avro, hdf5, stata?
-# TODOs: File Compression
+# TODO: Test File Compression
 
 # How often to repeat benchmark runs
 NUMBER_OF_RUNS : int = 3
@@ -47,15 +46,25 @@ class FormatBenchmarkTool:
         """
         with (
             CSVBenchmark(self.df, os.path.join(self.write_dir, f'{DF_SIZE}.csv')) as csv_benchmark,
-            ORCBenchmark(self.df, os.path.join(self.write_dir, f'{DF_SIZE}.orc')) as orc_benchmark,
-            ParquetBenchmark(self.df, os.path.join(self.write_dir, f'{DF_SIZE}.parquet')) as parquet_benchmark,
+            JSONBenchmark(self.df, os.path.join(self.write_dir, f'{DF_SIZE}.json')) as json_benchmark,
+            XMLBenchmark(self.df, os.path.join(self.write_dir, f'{DF_SIZE}.xml')) as xml_benchmark,
             PickleBenchmark(self.df, os.path.join(self.write_dir, f'{DF_SIZE}.pkl')) as pickle_benchmark,
+            HDF5Benchmark(self.df, os.path.join(self.write_dir, f'{DF_SIZE}.h5')) as hdf5_benchmark,
+            FeatherBenchmark(self.df, os.path.join(self.write_dir, f'{DF_SIZE}.feather')) as feather_benchmark,
+            ParquetBenchmark(self.df, os.path.join(self.write_dir, f'{DF_SIZE}.parquet')) as parquet_benchmark,
+            ORCBenchmark(self.df, os.path.join(self.write_dir, f'{DF_SIZE}.orc')) as orc_benchmark,
+            StataBenchmark(self.df, os.path.join(self.write_dir, f'{DF_SIZE}.dta')) as stata_benchmark,
         ):
             self.results : Dict[AbstractBenchmark] = {
                 'csv': csv_benchmark,
-                'orc': orc_benchmark,
-                'parquet': parquet_benchmark,
+                'json': json_benchmark,
+                'xml': xml_benchmark,
                 'pickle': pickle_benchmark,
+                'hdf5': hdf5_benchmark,
+                'feather': feather_benchmark,
+                'parquet': parquet_benchmark,
+                'orc': orc_benchmark,
+                'stata': stata_benchmark,
             }
 
     def get_results(self) -> Dict:
@@ -98,7 +107,7 @@ class AbstractBenchmark:
         :type number_of_runs: int, optional
         """
         print(f"Running '{type(self).__name__}'...")
-        self._results : Dict[float|None, float|None] = {
+        self._results : Dict[float|None, int|None, float|None] = {
             'write_time': None,
             'file_size': None,
             'read_time': None,
@@ -107,11 +116,11 @@ class AbstractBenchmark:
         self._results['file_size'] = self.measure_file_size()
         self._results['read_time'] = timeit.Timer(self.measure_read).timeit(number=number_of_runs)
 
-    def get_results(self) -> Dict[float|None, float|None]:
+    def get_results(self) -> Dict[float|None, int|None, float|None]:
         """Returns the collected benchmark results.
 
         :return: Dict of results
-        :rtype: Dict[float|None, float|None]
+        :rtype: Dict[float|None, int|None, float|None]
         """
         if self._results is None:
             self.collect_results()
@@ -196,3 +205,53 @@ class PickleBenchmark(AbstractBenchmark):
 
     def measure_read(self):
         pd.read_pickle(self._path)
+
+
+class FeatherBenchmark(AbstractBenchmark):
+    """Benchmarks .feather files.
+    """
+    def measure_write(self):
+        self._df.to_feather(self._path)
+
+    def measure_read(self):
+        pd.read_feather(self._path)
+
+
+class HDF5Benchmark(AbstractBenchmark):
+    """Benchmarks .h5 (HDF5) files.
+    """
+    def measure_write(self):
+        self._df.to_hdf(self._path, 'table')
+
+    def measure_read(self):
+        pd.read_hdf(self._path, 'table')
+
+
+class JSONBenchmark(AbstractBenchmark):
+    """Benchmarks .json files.
+    """
+    def measure_write(self):
+        self._df.to_json(self._path)
+
+    def measure_read(self):
+        pd.read_json(self._path)
+
+
+class XMLBenchmark(AbstractBenchmark):
+    """Benchmarks .xml files.
+    """
+    def measure_write(self):
+        self._df.to_xml(self._path)
+
+    def measure_read(self):
+        pd.read_xml(self._path)
+
+
+class StataBenchmark(AbstractBenchmark):
+    """Benchmarks .dta (Stata) files.
+    """
+    def measure_write(self):
+        self._df.to_stata(self._path)
+
+    def measure_read(self):
+        pd.read_stata(self._path)
