@@ -12,6 +12,7 @@ numpy = "^1.23.3"
 pandas = "^1.4.4"
 pyarrow = "^9.0.0"
 tables = "^3.7.0"
+ipykernel = "^6.15.3"
 
 
 [build-system]

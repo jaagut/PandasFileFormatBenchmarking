@@ -17,3 +17,7 @@ It is used to compare various [pandas file formats](https://pandas.pydata.org/do
 - `.parquet`
 - `.orc`
 - `.dta` (Stata)
+
+## Getting Started
+
+For ease of use we provide a simple Jupyter Notebook benchmarking all supported file formats and generating pretty graphs.

@@ -11,7 +11,7 @@ class AbstractBenchmark:
     """Abstract Benchmark to be implemented for various file formats.
     This can be used as a context manager (with ...).
     """
-    def __init__(self, df: pd.DataFrame, path: str):
+    def __init__(self, df: pd.DataFrame, path: str, number_of_runs: int):
         """Initialize Benchmark.
         A Benchmark implements dataframe write and read operations for a file format.
 
@@ -19,16 +19,17 @@ class AbstractBenchmark:
         :type df: pd.DataFrame
         :param path: The path to write the benchmark to.
         :type path: str
+        :param number_of_runs: Number of repeated benchmark runs
+        :type number_of_runs: int
         """
         self._df = df
         self._path : str = path
+        self._number_of_runs = number_of_runs
+
         self._results : Dict|None = None
 
-    def collect_results(self, number_of_runs: int = 3):
+    def collect_results(self):
         """Runs benchmarks and collects results
-
-        :param number_of_runs: Number of repeated runs for benchmarks, defaults to NUMBER_OF_RUNS
-        :type number_of_runs: int, optional
         """
         print(f"Running '{type(self).__name__}'...")
         self._results : Dict[float|None, int|None, float|None] = {
@@ -36,9 +37,9 @@ class AbstractBenchmark:
             'file_size': None,
             'read_time': None,
         }
-        self._results['write_time'] = timeit.Timer(self.measure_write).timeit(number=number_of_runs)
+        self._results['write_time'] = timeit.Timer(self.measure_write).timeit(number=self._number_of_runs)
         self._results['file_size'] = self.measure_file_size()
-        self._results['read_time'] = timeit.Timer(self.measure_read).timeit(number=number_of_runs)
+        self._results['read_time'] = timeit.Timer(self.measure_read).timeit(number=self._number_of_runs)
 
     def get_results(self) -> Dict[float|None, int|None, float|None]:
         """Returns the collected benchmark results.
