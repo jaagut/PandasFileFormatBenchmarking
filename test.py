@@ -4,14 +4,10 @@ import abc
 import timeit
 import numpy as np
 import pandas as pd
-import pyarrow as pa
+import pyarrow
 import pyarrow.orc as orc 
-import pickle
-import feather
-from fastavro import writer, reader, parse_schema
 
-# TODOs: Implement feather, hdf5, stata?
-# TODOs: Read benchmarks
+# TODOs: Implement feather, avro, hdf5, stata?
 # TODOs: File Compression
 
 # How often to repeat benchmark runs
@@ -101,6 +97,7 @@ class AbstractBenchmark:
         :param number_of_runs: Number of repeated runs for benchmarks, defaults to NUMBER_OF_RUNS
         :type number_of_runs: int, optional
         """
+        print(f"Running '{type(self).__name__}'...")
         self._results : Dict[float|None, float|None] = {
             'write_time': None,
             'file_size': None,
@@ -108,7 +105,7 @@ class AbstractBenchmark:
         }
         self._results['write_time'] = timeit.Timer(self.measure_write).timeit(number=number_of_runs)
         self._results['file_size'] = self.measure_file_size()
-        # TODO: read
+        self._results['read_time'] = timeit.Timer(self.measure_read).timeit(number=number_of_runs)
 
     def get_results(self) -> Dict[float|None, float|None]:
         """Returns the collected benchmark results.
@@ -136,6 +133,8 @@ class AbstractBenchmark:
 
     @abc.abstractmethod
     def measure_read(self):
+        """Reads the previously written file.
+        """
         ...
 
     def clean_files(self):
@@ -159,18 +158,24 @@ class CSVBenchmark(AbstractBenchmark):
         self._df.to_csv(self._path)
 
     def measure_read(self):
-        ...
+        pd.read_csv(self._path)
 
 
 class ORCBenchmark(AbstractBenchmark):
     """Benchmarks .orc files.
     """
     def measure_write(self):
-        table = pa.Table.from_pandas(self._df, preserve_index=False)
+        # self._df.to_orc(self._path)  # Not implemented/compatible
+        table = pyarrow.Table.from_pandas(self._df, preserve_index=False)
         orc.write_table(table, self._path)
 
     def measure_read(self):
-        ...
+        if os.name in ['posix']:
+            pd.read_orc(self._path)  # Not yet supported on Windows...
+        else:
+            print("Falling back to manually reading ORC using pyarrow on Windows...")
+            table = orc.read_table(self._path)
+            pyarrow.Table.to_pandas()
 
 
 class ParquetBenchmark(AbstractBenchmark):
@@ -180,15 +185,14 @@ class ParquetBenchmark(AbstractBenchmark):
         self._df.to_parquet(self._path)
 
     def measure_read(self):
-        ...
+        pd.read_parquet(self._path)
 
 
 class PickleBenchmark(AbstractBenchmark):
     """Benchmarks .pkl (Pickle) files.
     """
     def measure_write(self):
-        with open(self._path, 'wb') as f:
-            pickle.dump(self._df, f)
+        self._df.to_pickle(self._path)
 
     def measure_read(self):
-        ...
+        pd.read_pickle(self._path)
