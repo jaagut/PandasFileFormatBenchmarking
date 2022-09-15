@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List
 import os
 import abc
 import timeit
@@ -11,7 +11,7 @@ class AbstractBenchmark:
     """Abstract Benchmark to be implemented for various file formats.
     This can be used as a context manager (with ...).
     """
-    def __init__(self, df: pd.DataFrame, path: str, number_of_runs: int):
+    def __init__(self, df: pd.DataFrame, path: str, number_of_repeats: int):
         """Initialize Benchmark.
         A Benchmark implements dataframe write and read operations for a file format.
 
@@ -19,33 +19,33 @@ class AbstractBenchmark:
         :type df: pd.DataFrame
         :param path: The path to write the benchmark to.
         :type path: str
-        :param number_of_runs: Number of repeated benchmark runs
-        :type number_of_runs: int
+        :param number_of_repeats: Number of repeated benchmark runs
+        :type number_of_repeats: int
         """
         self._df = df
         self._path : str = path
-        self._number_of_runs = number_of_runs
+        self._number_of_repeats = number_of_repeats
 
         self._results : Dict|None = None
 
     def collect_results(self):
         """Runs benchmarks and collects results
         """
-        print(f"Running '{type(self).__name__}'...")
-        self._results : Dict[float|None, int|None, float|None] = {
+        print(f"Running '{type(self).__name__}'..." + " "*25, end='\r')
+        self._results : Dict[str, List[float]|int|None] = {
             'write_time': None,
             'file_size': None,
             'read_time': None,
         }
-        self._results['write_time'] = timeit.Timer(self.measure_write).timeit(number=self._number_of_runs)
+        self._results['write_time'] = timeit.Timer(self.measure_write).repeat(repeat=self._number_of_repeats, number=1)  # Default "number" for each repeat is 1M!
         self._results['file_size'] = self.measure_file_size()
-        self._results['read_time'] = timeit.Timer(self.measure_read).timeit(number=self._number_of_runs)
+        self._results['read_time'] = timeit.Timer(self.measure_read).repeat(repeat=self._number_of_repeats, number=1)  # Default "number" for each repeat is 1M!
 
-    def get_results(self) -> Dict[float|None, int|None, float|None]:
+    def get_results(self) -> Dict[str, List[float]|int|None]:
         """Returns the collected benchmark results.
 
         :return: Dict of results
-        :rtype: Dict[float|None, int|None, float|None]
+        :rtype: Dict[str, List[float]|int|None]
         """
         if self._results is None:
             self.collect_results()
@@ -74,7 +74,7 @@ class AbstractBenchmark:
     def clean_files(self):
         if os.path.exists(self._path):
             os.remove(self._path)
-            print(f"Cleaned '{self._path}'.")
+            print(f"Cleaned '{self._path}'." + " "*25, end='\r')  # Overwrite console line
         else:
             print(f"Could not clean '{self._path}', as it does not exist")
 
@@ -179,7 +179,7 @@ class ORCBenchmark(AbstractBenchmark):
         else:
             print("Falling back to manually reading ORC using pyarrow on Windows...")
             table = orc.read_table(self._path)
-            pyarrow.Table.to_pandas()
+            pyarrow.Table.to_pandas(table)
 
 
 class StataBenchmark(AbstractBenchmark):

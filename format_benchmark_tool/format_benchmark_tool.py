@@ -2,7 +2,7 @@ from typing import Dict
 import os
 import pandas as pd
 
-from benchmarks import *
+from .benchmarks import *
 
 # TODO: Test File Compression
 
@@ -10,22 +10,22 @@ from benchmarks import *
 class FormatBenchmarkTool:
     def __init__(self, 
             df: pd.DataFrame,
-            number_of_runs: int = 3,
+            number_of_repeats: int = 3,
             write_dir: str = '.cache/',
             file_prefix: str = 'benchmark'):
         """Initialize FormatBenchmarkTool.
 
         :param df: Pandas' dataframe to write
         :type df: pd.DataFrame, optional
-        :param number_of_runs: Number of repeated benchmark runs, defaults to 3
-        :type number_of_runs: int, optional
+        :param number_of_repeats: Number of repeated benchmark runs, defaults to 3
+        :type number_of_repeats: int, optional
         :param write_dir: Directory where to store write benchmarks, defaults to '.cache/'
         :type write_dir: str, optional
         :param file_prefix: Prefix of written files' basename (file extension will be added automatically), defaults to 'benchmark'
         :type file_prefix: str, optional
         """
         self.df = df
-        self.number_of_runs = number_of_runs
+        self.number_of_repeats = number_of_repeats
         self.write_dir = write_dir
         self.file_prefix = file_prefix
 
@@ -38,16 +38,16 @@ class FormatBenchmarkTool:
         """Run all benchmarks and collect results.
         """
         with (
-            CSVBenchmark(self.df, os.path.join(self.write_dir, f'{self.file_prefix}.csv', self.number_of_runs)) as csv_benchmark,
-            JSONBenchmark(self.df, os.path.join(self.write_dir, f'{self.file_prefix}.json', self.number_of_runs)) as json_benchmark,
-            XMLBenchmark(self.df, os.path.join(self.write_dir, f'{self.file_prefix}.xml', self.number_of_runs)) as xml_benchmark,
-            ExcelBenchmark(self.df, os.path.join(self.write_dir, f'{self.file_prefix}.xlsx', self.number_of_runs)) as excel_benchmark,
-            PickleBenchmark(self.df, os.path.join(self.write_dir, f'{self.file_prefix}.pkl', self.number_of_runs)) as pickle_benchmark,
-            HDF5Benchmark(self.df, os.path.join(self.write_dir, f'{self.file_prefix}.h5', self.number_of_runs)) as hdf5_benchmark,
-            FeatherBenchmark(self.df, os.path.join(self.write_dir, f'{self.file_prefix}.feather', self.number_of_runs)) as feather_benchmark,
-            ParquetBenchmark(self.df, os.path.join(self.write_dir, f'{self.file_prefix}.parquet', self.number_of_runs)) as parquet_benchmark,
-            ORCBenchmark(self.df, os.path.join(self.write_dir, f'{self.file_prefix}.orc', self.number_of_runs)) as orc_benchmark,
-            StataBenchmark(self.df, os.path.join(self.write_dir, f'{self.file_prefix}.dta', self.number_of_runs)) as stata_benchmark,
+            CSVBenchmark(self.df, os.path.join(self.write_dir, f'{self.file_prefix}.csv'), self.number_of_repeats) as csv_benchmark,
+            JSONBenchmark(self.df, os.path.join(self.write_dir, f'{self.file_prefix}.json'), self.number_of_repeats) as json_benchmark,
+            XMLBenchmark(self.df, os.path.join(self.write_dir, f'{self.file_prefix}.xml'), self.number_of_repeats) as xml_benchmark,
+            ExcelBenchmark(self.df, os.path.join(self.write_dir, f'{self.file_prefix}.xlsx'), self.number_of_repeats) as excel_benchmark,
+            PickleBenchmark(self.df, os.path.join(self.write_dir, f'{self.file_prefix}.pkl'), self.number_of_repeats) as pickle_benchmark,
+            HDF5Benchmark(self.df, os.path.join(self.write_dir, f'{self.file_prefix}.h5'), self.number_of_repeats) as hdf5_benchmark,
+            FeatherBenchmark(self.df, os.path.join(self.write_dir, f'{self.file_prefix}.feather'), self.number_of_repeats) as feather_benchmark,
+            ParquetBenchmark(self.df, os.path.join(self.write_dir, f'{self.file_prefix}.parquet'), self.number_of_repeats) as parquet_benchmark,
+            ORCBenchmark(self.df, os.path.join(self.write_dir, f'{self.file_prefix}.orc'), self.number_of_repeats) as orc_benchmark,
+            StataBenchmark(self.df, os.path.join(self.write_dir, f'{self.file_prefix}.dta'), self.number_of_repeats) as stata_benchmark,
         ):
             self.results : Dict[AbstractBenchmark] = {
                 'csv': csv_benchmark,
