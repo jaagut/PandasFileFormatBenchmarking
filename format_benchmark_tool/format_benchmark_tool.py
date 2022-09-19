@@ -24,12 +24,14 @@ class FormatBenchmarkTool:
         :param file_prefix: Prefix of written files' basename (file extension will be added automatically), defaults to 'benchmark'
         :type file_prefix: str, optional
         """
-        self.df = df
-        self.number_of_repeats = number_of_repeats
+        self.test_data = df
+        self.N = number_of_repeats
         self.write_dir = write_dir
         self.file_prefix = file_prefix
 
-        self.results : Dict|None = None
+
+        self.columns : List[str] = get_result_columns()
+        self.results : pd.DataFrame = pd.DataFrame([], columns=self.columns)  # Empty DataFrame with named columns for each metric
 
         # Create directory for writing, if necessary
         os.makedirs(self.write_dir, exist_ok=True)
@@ -38,29 +40,30 @@ class FormatBenchmarkTool:
         """Run all benchmarks and collect results.
         """
         with (
-            CSVBenchmark(self.df, os.path.join(self.write_dir, f'{self.file_prefix}.csv'), self.number_of_repeats) as csv_benchmark,
-            JSONBenchmark(self.df, os.path.join(self.write_dir, f'{self.file_prefix}.json'), self.number_of_repeats) as json_benchmark,
-            XMLBenchmark(self.df, os.path.join(self.write_dir, f'{self.file_prefix}.xml'), self.number_of_repeats) as xml_benchmark,
-            ExcelBenchmark(self.df, os.path.join(self.write_dir, f'{self.file_prefix}.xlsx'), self.number_of_repeats) as excel_benchmark,
-            PickleBenchmark(self.df, os.path.join(self.write_dir, f'{self.file_prefix}.pkl'), self.number_of_repeats) as pickle_benchmark,
-            HDF5Benchmark(self.df, os.path.join(self.write_dir, f'{self.file_prefix}.h5'), self.number_of_repeats) as hdf5_benchmark,
-            FeatherBenchmark(self.df, os.path.join(self.write_dir, f'{self.file_prefix}.feather'), self.number_of_repeats) as feather_benchmark,
-            ParquetBenchmark(self.df, os.path.join(self.write_dir, f'{self.file_prefix}.parquet'), self.number_of_repeats) as parquet_benchmark,
-            ORCBenchmark(self.df, os.path.join(self.write_dir, f'{self.file_prefix}.orc'), self.number_of_repeats) as orc_benchmark,
-            StataBenchmark(self.df, os.path.join(self.write_dir, f'{self.file_prefix}.dta'), self.number_of_repeats) as stata_benchmark,
+            CSVBenchmark(self.test_data, os.path.join(self.write_dir, f'{self.file_prefix}.csv'), self.N) as csv_benchmark,
+            JSONBenchmark(self.test_data, os.path.join(self.write_dir, f'{self.file_prefix}.json'), self.N) as json_benchmark,
+            XMLBenchmark(self.test_data, os.path.join(self.write_dir, f'{self.file_prefix}.xml'), self.N) as xml_benchmark,
+            ExcelBenchmark(self.test_data, os.path.join(self.write_dir, f'{self.file_prefix}.xlsx'), self.N) as excel_benchmark,
+            PickleBenchmark(self.test_data, os.path.join(self.write_dir, f'{self.file_prefix}.pkl'), self.N) as pickle_benchmark,
+            HDF5Benchmark(self.test_data, os.path.join(self.write_dir, f'{self.file_prefix}.h5'), self.N) as hdf5_benchmark,
+            FeatherBenchmark(self.test_data, os.path.join(self.write_dir, f'{self.file_prefix}.feather'), self.N) as feather_benchmark,
+            ParquetBenchmark(self.test_data, os.path.join(self.write_dir, f'{self.file_prefix}.parquet'), self.N) as parquet_benchmark,
+            ORCBenchmark(self.test_data, os.path.join(self.write_dir, f'{self.file_prefix}.orc'), self.N) as orc_benchmark,
+            StataBenchmark(self.test_data, os.path.join(self.write_dir, f'{self.file_prefix}.dta'), self.N) as stata_benchmark,
         ):
-            self.results : Dict[AbstractBenchmark] = {
-                'csv': csv_benchmark,
-                'json': json_benchmark,
-                'xml': xml_benchmark,
-                'excel': excel_benchmark,
-                'pickle': pickle_benchmark,
-                'hdf5': hdf5_benchmark,
-                'feather': feather_benchmark,
-                'parquet': parquet_benchmark,
-                'orc': orc_benchmark,
-                'stata': stata_benchmark,
-            }
+            self.results = pd.concat([
+                self.results,
+                csv_benchmark,
+                json_benchmark,
+                xml_benchmark,
+                excel_benchmark,
+                pickle_benchmark,
+                hdf5_benchmark,
+                feather_benchmark,
+                parquet_benchmark,
+                orc_benchmark,
+                stata_benchmark,
+            ], ignore_index=True)
 
     def get_results(self) -> Dict:
         """Returns the collected benchmark results.
@@ -68,6 +71,6 @@ class FormatBenchmarkTool:
         :return: Results of all benchmarks.
         :rtype: Dict
         """
-        if self.results is None:
+        if self.results.empty:
             self.run()
         return self.results
