@@ -57,8 +57,8 @@ class AbstractBenchmark:
     def collect_results(self):
         """Runs benchmarks and collects results
         """
-        print(f"Running '{type(self).__name__}'..." + " "*25, end='\r')
-        for _ in range(self.N):
+        for n in range(self.N):
+            print(f"Running '{type(self).__name__}' ({n+1}/{self.N})..." + " "*25, end='\r')
             self.results = pd.concat([self.results, pd.DataFrame([[
                 self.format_name,
                 timeit.Timer(self.measure_write).timeit(number=1),  # Default "number" for each repeat is 1M!
