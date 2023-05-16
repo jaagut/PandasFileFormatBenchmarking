@@ -25,16 +25,19 @@ class FormatBenchmarkTool:
         :type file_prefix: str, optional
         """
         self.test_data = df
+        self.test_data.dropna(how='all', axis=1, inplace=True)
         self.N = number_of_repeats
         self.write_dir = write_dir
         self.file_prefix = file_prefix
-
 
         self.columns : List[str] = get_result_columns()
         self.results : pd.DataFrame = pd.DataFrame([], columns=self.columns)  # Empty DataFrame with named columns for each metric
 
         # Create directory for writing, if necessary
         os.makedirs(self.write_dir, exist_ok=True)
+
+    def get_memory_usage(self) -> float:
+        return self.test_data.memory_usage(deep=True).sum()
 
     def run(self):
         """Run all benchmarks and collect results.
